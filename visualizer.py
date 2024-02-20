@@ -2,49 +2,61 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import numpy as np
+import os
+import sys
 
-df = pd.read_csv('streams.csv')
+class GanttChart:
 
-df['Due Date'] = pd.to_datetime(df['Due Date'], errors='coerce').dt.date
+    def __init__(self, path : str) -> None:
+        self.path = path
+        self.df = None
+    
+    def load_data(self):
+        self.df = pd.read_csv(self.path)
+        self.df['Custom field (Start)'] = pd.to_datetime(self.df['Custom field (Start)'], errors='coerce').dt.date
+        self.df['Due Date'] = pd.to_datetime(self.df['Due Date'], errors='coerce').dt.date
+        self.df.dropna(subset=['Due Date', 'Custom field (Start)'], inplace=True)
+        self.df.sort_values('Custom field (Start)', inplace=True)
 
-# no jira field for start date, so using custom field
-df['Custom field (Start)'] = pd.to_datetime(df['Custom field (Start)'], errors='coerce').dt.date
+    def generate_gantt_chart(self, output_path : str):
+        fig, ax = plt.subplots(figsize=(10, 5))
+        colors = plt.cm.viridis(np.linspace(0, 1, len(self.df)))
+        bar_height = 0.9
 
-# remove rows with missing dates
-df = df.dropna(subset=['Due Date', 'Custom field (Start)'])
+        for i, (_, row) in enumerate(self.df.iterrows()):
+            duration = (row['Due Date'] - row['Custom field (Start)']).days
+            ax.barh(i, duration, left=mdates.date2num(row['Custom field (Start)']), height=bar_height, color=colors[i])
+        
+        ax.set_yticks(range(len(self.df)))
+        ax.set_yticklabels(self.df['Summary'], fontsize=8)
+        plt.yticks(rotation=0)
 
-# sort by start date
-df = df.sort_values('Custom field (Start)')
+        self.format_axes(ax)
 
-# set up the plot
-# adjust the figsize to make the chart longer and provide enough space for each bar
-fig, ax = plt.subplots(figsize=(10, len(df)))
+        deadline = pd.to_datetime('2025-01-01')
+        plt.axvline(x=mdates.date2num(deadline), color='red', linestyle='-')
+        plt.savefig(output_path, dpi=300)
 
-# generate a color array
-colors = plt.cm.viridis(np.linspace(0, 1, len(df)))
+    def format_axes(self, ax):
+        ax.xaxis.grid(True, linestyle='--', which='major', color='grey', alpha=.25)
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+        ax.xaxis.set_major_locator(mdates.MonthLocator())
+        plt.xticks(fontsize=8, rotation=70)
+        plt.tight_layout()
 
-# plot each task
-bar_height = 0.9 # increase this to reduce the gap between bars
-for i, (index, row) in enumerate(df.iterrows()):
-    duration = (row['Due Date'] - row['Custom field (Start)']).days
-    ax.barh(i, duration, left=mdates.date2num(row['Custom field (Start)']), height=bar_height, color=colors[i])
+    def save_plot(self):
+        if self.df is not None:
+            trimmed_name = os.path.splitext(self.path)[0]
+            self.generate_gantt_chart(f"{trimmed_name}.png")
+        else:
+            print("data not loaded - call load_data() before saving plot")
 
-# set y-ticks to be the names of the tasks
-ax.set_yticks(range(len(df)))
-ax.set_yticklabels(df['Summary'], fontsize=8)
-plt.yticks(rotation=0)
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        chart = GanttChart(sys.argv[1])
+        chart.load_data()
+        chart.save_plot()
+    else:
+        print("please provide a csv file")
+        sys.exit(1)
 
-# improve readability by adding grid lines
-ax.xaxis.grid(True, linestyle='--', which='major', color='grey', alpha=.25)
-ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-ax.xaxis.set_major_locator(mdates.MonthLocator())
-
-# rotate x-ticks(dates) for better visibility
-plt.xticks(fontsize=8)
-plt.xticks(rotation=70)
-
-# adjust the padding between and around subplots
-plt.tight_layout()
-
-# save a high-resolution version of the plot
-plt.savefig('diagram.png', dpi=300)
