@@ -7,16 +7,18 @@ import sys
 
 class GanttChart:
 
-    def __init__(self, path : str) -> None:
+    def __init__(self, path : str, start : str, end : str) -> None:
         self.path = path
+        self.start_date_field = start
+        self.end_date_field = end
         self.df = None
     
     def load_data(self):
         self.df = pd.read_csv(self.path)
-        self.df['Custom field (Start)'] = pd.to_datetime(self.df['Custom field (Start)'], errors='coerce').dt.date
-        self.df['Due Date'] = pd.to_datetime(self.df['Due Date'], errors='coerce').dt.date
-        self.df.dropna(subset=['Due Date', 'Custom field (Start)'], inplace=True)
-        self.df.sort_values('Custom field (Start)', inplace=True)
+        self.df[self.start_date_field] = pd.to_datetime(self.df[self.start_date_field], errors='coerce').dt.date
+        self.df[self.end_date_field] = pd.to_datetime(self.df[self.end_date_field], errors='coerce').dt.date
+        self.df.dropna(subset=[self.end_date_field, self.start_date_field], inplace=True)
+        self.df.sort_values(self.start_date_field, inplace=True)
 
     def generate_gantt_chart(self, output_path : str):
         fig, ax = plt.subplots(figsize=(10, 5))
@@ -24,8 +26,8 @@ class GanttChart:
         bar_height = 0.9
 
         for i, (_, row) in enumerate(self.df.iterrows()):
-            duration = (row['Due Date'] - row['Custom field (Start)']).days
-            ax.barh(i, duration, left=mdates.date2num(row['Custom field (Start)']), height=bar_height, color=colors[i])
+            duration = (row[self.end_date_field] - row[self.start_date_field]).days
+            ax.barh(i, duration, left=mdates.date2num(row[self.start_date_field]), height=bar_height, color=colors[i])
         
         ax.set_yticks(range(len(self.df)))
         ax.set_yticklabels(self.df['Summary'], fontsize=8)
@@ -52,11 +54,11 @@ class GanttChart:
             print("data not loaded - call load_data() before saving plot")
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        chart = GanttChart(sys.argv[1])
+    if len(sys.argv) > 3:
+        chart = GanttChart(sys.argv[1], sys.argv[2], sys.argv[3])
         chart.load_data()
         chart.save_plot()
     else:
-        print("please provide a csv file")
+        print("usage: python3 visualizer.py 'data.csv' 'start date field' 'end date field'")
         sys.exit(1)
 
