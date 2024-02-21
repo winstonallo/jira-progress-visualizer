@@ -4,31 +4,42 @@ import matplotlib.dates as mdates
 import numpy as np
 import os
 import sys
-import glob
 
 STREAM_COLOR = '#5E1914'
 AP_COLOR = '#C21807'
 
 class GanttChart:
 
-    def __init__(self, path : str, target_dir : str) -> None:
+    def __init__(self, path : str, config : dict[str, str]) -> None:
         self.path = path
-        self.start_date_field = 'Custom field (Start)'
-        self.end_date_field = 'Due Date'
-        self.target_dir = target_dir
+        self.load_config(config)
         self.df = None
+
+    def load_config(self, config):
+        try:
+            self.start_date_field = config['start_date_field']
+            self.end_date_field = config['end_date_field']
+            self.target_dir = config['target_dir']
+            self.csv_dir = config['csv_dir']
+            self.stream_color = config['stream_color']
+            self.ap_color = config['ap_color']
+            self.label = config['label']
+            self.deadline = config['deadline']
+        except KeyError:
+            print(f'error: data missing in {self.path}')
+            sys.exit(1)
     
     def set_color(self, i : int, row : pd.Series) -> str:
-        if row['Summary'] == 'Testphase':
+        if row[self.label] == 'Testphase':
             return 'grey'
-        elif row['Summary'] == 'Produktivsetzung':
+        elif row[self.label] == 'Produktivsetzung':
             return 'yellow'
-        elif row['Summary'] == 'Abnahme':
+        elif row[self.label] == 'Abnahme':
             return 'green'
         elif row['Issue Type'] == 'Stream' and self.path != 'streams.csv':
-            return STREAM_COLOR
+            return self.stream_color
         elif row['Issue Type'] == 'Arbeitspaket':
-            return AP_COLOR
+            return self.ap_color
         else:
             return self.colors[i]
 
@@ -52,12 +63,12 @@ class GanttChart:
             ax.barh(i, duration, left=mdates.date2num(row[self.start_date_field]), height=bar_height, color=color)
         
         ax.set_yticks(range(len(self.df)))
-        ax.set_yticklabels(self.df['Summary'], fontsize=8)
+        ax.set_yticklabels(self.df[self.label], fontsize=8)
         plt.yticks(rotation=0)
 
         self.format_axes(ax)
 
-        deadline = pd.to_datetime('2025-01-01')
+        deadline = pd.to_datetime(self.deadline)
         plt.axvline(x=mdates.date2num(deadline), color='red', linestyle='-')
         plt.savefig(output_path, dpi=300)
 
@@ -76,16 +87,5 @@ class GanttChart:
         else:
             print("data not loaded - call load_data() before saving plot")
 
-if __name__ == "__main__":
-    if len(sys.argv) == 3:
-        if not os.path.exists(sys.argv[2]):
-            os.makedirs(sys.argv[2])
-        files = glob.glob(f'{sys.argv[1]}/*.csv')
-        for file in files:
-            chart = GanttChart(file, sys.argv[2])
-            chart.load_data()
-            chart.save_plot()
-    else:
-        print("usage: python3 visualizer.py csv_dir target_dir")
-        sys.exit(1)
+
 
