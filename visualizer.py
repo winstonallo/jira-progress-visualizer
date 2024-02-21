@@ -18,7 +18,7 @@ class GanttChart:
         self.df[self.start_date_field] = pd.to_datetime(self.df[self.start_date_field], errors='coerce').dt.date
         self.df[self.end_date_field] = pd.to_datetime(self.df[self.end_date_field], errors='coerce').dt.date
         self.df.dropna(subset=[self.end_date_field, self.start_date_field], inplace=True)
-        self.df.sort_values(self.start_date_field, inplace=True)
+        self.df.sort_values(self.start_date_field, inplace=True, ascending=False)
 
     def generate_gantt_chart(self, output_path : str):
         fig, ax = plt.subplots(figsize=(10, 5))
