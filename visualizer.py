@@ -1,10 +1,10 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import matplotlib.colors as mcolors
 import numpy as np
 import os
 import sys
+import glob
 
 STREAM_COLOR = '#5E1914'
 AP_COLOR = '#C21807'
@@ -67,17 +67,22 @@ class GanttChart:
 
     def save_plot(self):
         if self.df is not None:
-            trimmed_name = os.path.splitext(self.path)[0]
-            self.generate_gantt_chart(f"{trimmed_name}.png")
+            no_suffix = os.path.splitext(self.path)[0]
+            trimmed_name = no_suffix.split("/", 1)[-1]
+            self.generate_gantt_chart(f"diagrams/{trimmed_name}.png")
         else:
             print("data not loaded - call load_data() before saving plot")
 
 if __name__ == "__main__":
-    if len(sys.argv) > 3:
-        chart = GanttChart(sys.argv[1], sys.argv[2], sys.argv[3])
-        chart.load_data()
-        chart.save_plot()
+    if len(sys.argv) == 3:
+        if not os.path.exists('diagrams'):
+            os.makedirs('diagrams')
+        files = glob.glob('data/*.csv')
+        for file in files:
+            chart = GanttChart(file, sys.argv[1], sys.argv[2])
+            chart.load_data()
+            chart.save_plot()
     else:
-        print("usage: python3 visualizer.py 'data.csv' 'start date field' 'end date field'")
+        print("usage: python3 visualizer.py 'start date field' 'end date field'")
         sys.exit(1)
 
