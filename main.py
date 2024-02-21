@@ -1,7 +1,8 @@
 import os
 import glob
 import sys
-from visualizer import GanttChart
+from visualizer.visualizer import GanttChart
+from visualizer.config import Config
 
 if __name__ == "__main__":
     if len(sys.argv) == 3:
