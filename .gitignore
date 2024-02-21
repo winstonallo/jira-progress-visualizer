@@ -1,7 +1,7 @@
 *.csv
 *.png
 *.pdf
-__pychache__
+__pycache__
 data
 diagrams
 config.json
