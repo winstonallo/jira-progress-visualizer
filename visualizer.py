@@ -5,6 +5,8 @@ import numpy as np
 import os
 import sys
 
+SKY_BLUE = '#87CEEB'
+
 class GanttChart:
 
     def __init__(self, path : str, start : str, end : str) -> None:
@@ -13,6 +15,18 @@ class GanttChart:
         self.end_date_field = end
         self.df = None
     
+    def set_color(self, i : int, row : pd.Series) -> str:
+        if row['Summary'] == 'Testphase':
+            return 'grey'
+        elif row['Summary'] == 'Produktivsetzung':
+            return 'yellow'
+        elif row['Summary'] == 'Abnahme':
+            return 'green'
+        elif row['Issue Type'] == 'Stream':
+            return SKY_BLUE
+        else:
+            return self.colors[i]
+
     def load_data(self):
         self.df = pd.read_csv(self.path)
         self.df[self.start_date_field] = pd.to_datetime(self.df[self.start_date_field], errors='coerce').dt.date
@@ -22,12 +36,13 @@ class GanttChart:
 
     def generate_gantt_chart(self, output_path : str):
         fig, ax = plt.subplots(figsize=(10, 5))
-        colors = plt.cm.viridis(np.linspace(0, 1, len(self.df)))
+        self.colors = plt.cm.viridis(np.linspace(0, 1, len(self.df)))
         bar_height = 0.9
 
         for i, (_, row) in enumerate(self.df.iterrows()):
             duration = (row[self.end_date_field] - row[self.start_date_field]).days
-            ax.barh(i, duration, left=mdates.date2num(row[self.start_date_field]), height=bar_height, color=colors[i])
+            color = self.set_color(i, row)
+            ax.barh(i, duration, left=mdates.date2num(row[self.start_date_field]), height=bar_height, color=color)
         
         ax.set_yticks(range(len(self.df)))
         ax.set_yticklabels(self.df['Summary'], fontsize=8)
