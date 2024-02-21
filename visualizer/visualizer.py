@@ -3,8 +3,6 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import numpy as np
 import os
-import sys
-import glob
 
 STREAM_COLOR = '#5E1914'
 AP_COLOR = '#C21807'
@@ -76,16 +74,5 @@ class GanttChart:
         else:
             print("data not loaded - call load_data() before saving plot")
 
-if __name__ == "__main__":
-    if len(sys.argv) == 3:
-        if not os.path.exists(sys.argv[2]):
-            os.makedirs(sys.argv[2])
-        files = glob.glob(f'{sys.argv[1]}/*.csv')
-        for file in files:
-            chart = GanttChart(file, sys.argv[2])
-            chart.load_data()
-            chart.save_plot()
-    else:
-        print("usage: python3 visualizer.py csv_dir target_dir")
-        sys.exit(1)
+
 
