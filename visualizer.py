@@ -1,11 +1,13 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+import matplotlib.colors as mcolors
 import numpy as np
 import os
 import sys
 
-SKY_BLUE = '#87CEEB'
+STREAM_COLOR = '#5E1914'
+AP_COLOR = '#C21807'
 
 class GanttChart:
 
@@ -22,8 +24,10 @@ class GanttChart:
             return 'yellow'
         elif row['Summary'] == 'Abnahme':
             return 'green'
-        elif row['Issue Type'] == 'Stream':
-            return SKY_BLUE
+        elif row['Issue Type'] == 'Stream' and self.path != 'streams.csv':
+            return STREAM_COLOR
+        elif row['Issue Type'] == 'Arbeitspaket':
+            return AP_COLOR
         else:
             return self.colors[i]
 
