@@ -5,14 +5,16 @@ from visualizer.visualizer import GanttChart
 from visualizer.config import Config
 
 if __name__ == "__main__":
-    if len(sys.argv) == 3:
-        if not os.path.exists(sys.argv[2]):
-            os.makedirs(sys.argv[2])
-        files = glob.glob(f'{sys.argv[1]}/*.csv')
-        for file in files:
-            chart = GanttChart(file, sys.argv[2])
-            chart.load_data()
-            chart.save_plot()
+    if len(sys.argv) == 2:
+        config_path = sys.argv[1]
     else:
-        print("usage: python3 visualizer.py csv_dir target_dir")
-        sys.exit(1)
+        config_path = None
+    config = Config().config
+    if not os.path.exists(config['target_dir']):
+        os.makedirs(config['target_dir'])
+    files = glob.glob(f"{config['csv_dir']}/*.csv")
+    for file in files:
+        chart = GanttChart(file, config)
+        chart.load_data()
+        chart.save_plot()
+        
