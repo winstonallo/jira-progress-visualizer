@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import numpy as np
 import os
+import sys
 
 STREAM_COLOR = '#5E1914'
 AP_COLOR = '#C21807'
@@ -11,15 +12,22 @@ class GanttChart:
 
     def __init__(self, path : str, config : dict[str, str]) -> None:
         self.path = path
-        self.start_date_field = config['start_date_field']
-        self.end_date_field = config['end_date_field']
-        self.target_dir = config['target_dir']
-        self.csv_dir = config['csv_dir']
-        self.stream_color = config['stream_color']
-        self.ap_color = config['ap_color']
-        self.label = config['label']
-        self.deadline = config['deadline']
+        self.load_config(config)
         self.df = None
+
+    def load_config(self, config):
+        try:
+            self.start_date_field = config['start_date_field']
+            self.end_date_field = config['end_date_field']
+            self.target_dir = config['target_dir']
+            self.csv_dir = config['csv_dir']
+            self.stream_color = config['stream_color']
+            self.ap_color = config['ap_color']
+            self.label = config['label']
+            self.deadline = config['deadline']
+        except KeyError:
+            print(f'error: data missing in {self.path}')
+            sys.exit(1)
     
     def set_color(self, i : int, row : pd.Series) -> str:
         if row[self.label] == 'Testphase':
