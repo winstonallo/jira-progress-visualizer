@@ -1,20 +1,21 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import matplotlib.colors as mcolors
 import numpy as np
 import os
 import sys
+import glob
 
 STREAM_COLOR = '#5E1914'
 AP_COLOR = '#C21807'
 
 class GanttChart:
 
-    def __init__(self, path : str, start : str, end : str) -> None:
+    def __init__(self, path : str, target_dir : str) -> None:
         self.path = path
-        self.start_date_field = start
-        self.end_date_field = end
+        self.start_date_field = 'Custom field (Start)'
+        self.end_date_field = 'Due Date'
+        self.target_dir = target_dir
         self.df = None
     
     def set_color(self, i : int, row : pd.Series) -> str:
@@ -36,7 +37,9 @@ class GanttChart:
         self.df[self.start_date_field] = pd.to_datetime(self.df[self.start_date_field], errors='coerce').dt.date
         self.df[self.end_date_field] = pd.to_datetime(self.df[self.end_date_field], errors='coerce').dt.date
         self.df.dropna(subset=[self.end_date_field, self.start_date_field], inplace=True)
-        self.df.sort_values(self.start_date_field, inplace=True, ascending=False)
+        self.df['is_stream'] = self.df['Issue Type'].apply(lambda x: 1 if x == 'Stream' else 0)
+        self.df.sort_values(by=['is_stream', self.start_date_field], inplace=True, ascending=False)
+        self.df.drop('is_stream', axis=1, inplace=True)
 
     def generate_gantt_chart(self, output_path : str):
         fig, ax = plt.subplots(figsize=(10, 5))
@@ -67,17 +70,22 @@ class GanttChart:
 
     def save_plot(self):
         if self.df is not None:
-            trimmed_name = os.path.splitext(self.path)[0]
-            self.generate_gantt_chart(f"{trimmed_name}.png")
+            no_suffix = os.path.splitext(self.path)[0]
+            trimmed_name = no_suffix.split("/", 1)[-1]
+            self.generate_gantt_chart(f"{self.target_dir}/{trimmed_name}.png")
         else:
             print("data not loaded - call load_data() before saving plot")
 
 if __name__ == "__main__":
-    if len(sys.argv) > 3:
-        chart = GanttChart(sys.argv[1], sys.argv[2], sys.argv[3])
-        chart.load_data()
-        chart.save_plot()
+    if len(sys.argv) == 3:
+        if not os.path.exists(sys.argv[2]):
+            os.makedirs(sys.argv[2])
+        files = glob.glob(f'{sys.argv[1]}/*.csv')
+        for file in files:
+            chart = GanttChart(file, sys.argv[2])
+            chart.load_data()
+            chart.save_plot()
     else:
-        print("usage: python3 visualizer.py 'data.csv' 'start date field' 'end date field'")
+        print("usage: python3 visualizer.py csv_dir target_dir")
         sys.exit(1)
 
