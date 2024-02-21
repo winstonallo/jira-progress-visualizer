@@ -11,10 +11,11 @@ AP_COLOR = '#C21807'
 
 class GanttChart:
 
-    def __init__(self, path : str, start : str, end : str) -> None:
+    def __init__(self, path : str, target_dir : str) -> None:
         self.path = path
-        self.start_date_field = start
-        self.end_date_field = end
+        self.start_date_field = 'Custom field (Start)'
+        self.end_date_field = 'Due Date'
+        self.target_dir = target_dir
         self.df = None
     
     def set_color(self, i : int, row : pd.Series) -> str:
@@ -69,20 +70,20 @@ class GanttChart:
         if self.df is not None:
             no_suffix = os.path.splitext(self.path)[0]
             trimmed_name = no_suffix.split("/", 1)[-1]
-            self.generate_gantt_chart(f"diagrams/{trimmed_name}.png")
+            self.generate_gantt_chart(f"{self.target_dir}/{trimmed_name}.png")
         else:
             print("data not loaded - call load_data() before saving plot")
 
 if __name__ == "__main__":
     if len(sys.argv) == 3:
-        if not os.path.exists('diagrams'):
-            os.makedirs('diagrams')
-        files = glob.glob('data/*.csv')
+        if not os.path.exists(sys.argv[2]):
+            os.makedirs(sys.argv[2])
+        files = glob.glob(f'{sys.argv[1]}/*.csv')
         for file in files:
-            chart = GanttChart(file, sys.argv[1], sys.argv[2])
+            chart = GanttChart(file, sys.argv[2])
             chart.load_data()
             chart.save_plot()
     else:
-        print("usage: python3 visualizer.py 'start date field' 'end date field'")
+        print("usage: python3 visualizer.py csv_dir target_dir")
         sys.exit(1)
 
