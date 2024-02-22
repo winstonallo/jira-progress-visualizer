@@ -5,6 +5,7 @@ import numpy as np
 import os
 import sys
 import textwrap
+from errors import Error
 
 plt.rcParams['font.family'] = 'DejaVu Serif'
 plt.rcParams['font.weight'] = 'bold'
@@ -28,10 +29,8 @@ class GanttChart:
             self.milestones = config['milestones']
             self.color_map = dict(config['visualization']['colors'])
         except KeyError as e:
-            print(f'error: data {e} missing in {self.path}')
-            sys.exit(1)
+            Error(f'error: data {e} missing in {self.path}')
     
-    # sets color based on label
     def set_color(self, i : int, row : pd.Series) -> str:
         color = self.color_map.get(row[self.label])
         if color is not None:
@@ -49,8 +48,7 @@ class GanttChart:
             try:
                 self.df = self.df[self.df[filter['field']] != filter['condition']]
             except IndexError:
-                print(f'error: invalid filter: {filter}')
-                sys.exit(1)
+                Error(f'error: invalid filter: {filter}')
         self.df[self.label] = self.wrap_line(self.df[self.label], 40)
 
     # loads data from csv file and applies filters

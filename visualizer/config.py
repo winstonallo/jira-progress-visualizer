@@ -1,6 +1,6 @@
-import sys
 import json
 import os
+from errors import Error
 
 class Config:
 
@@ -16,8 +16,7 @@ class Config:
             except json.JSONDecodeError:
                 print('please provide a valid .json config file')
         else:
-            print('no config file found - aborting')
-            sys.exit(1)
+            Error('no config file found - aborting')
         return config
     
     def get_config(self) ->dict[str, str]:
