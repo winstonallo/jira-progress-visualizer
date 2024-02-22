@@ -22,37 +22,22 @@ class GanttChart:
             self.end_date_field = config['end_date_field']
             self.target_dir = config['target_dir']
             self.csv_dir = config['csv_dir']
-            self.stream_color = config['stream_color']
-            self.ap_color = config['ap_color']
             self.label = config['label']
             self.start = config['start']
             self.deadline = config['deadline']
             self.filters = config['filters?']
             self.bar_height = float(config['bar_height'])
+            self.color_map = dict(config['colors'])
         except KeyError as e:
             print(f'error: data {e} missing in {self.path}')
             sys.exit(1)
     
     # sets color based on label
     def set_color(self, i : int, row : pd.Series) -> str:
-        if row[self.label] == 'Testphase':
-            return 'grey'
-        elif row[self.label] == 'Produktivsetzung':
-            return 'yellow'
-        elif row[self.label] == 'Abnahme':
-            return 'green'
-        elif row['Issue Type'] == 'Stream' and self.path != 'streams.csv':
-            if self.stream_color == 'random':
-                return self.colors[i]
-            else:
-                return self.stream_color
-        elif row['Issue Type'] == 'Arbeitspaket':
-            if self.ap_color == 'random':
-                return self.colors[i]
-            else:
-                return self.ap_color
-        else:
-            return self.colors[i]
+        color = self.color_map.get(row[self.label])
+        if color is not None:
+            return color
+        return self.colors[i]
 
     # wraps text in dataframe for better readability
     def wrap_line(self, series, width):
