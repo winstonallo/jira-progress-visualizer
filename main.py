@@ -10,9 +10,9 @@ if __name__ == "__main__":
     else:
         config_path = None
     config = Config().config
-    if not os.path.exists(config['target_dir']):
-        os.makedirs(config['target_dir'])
-    files = glob.glob(f"{config['csv_dir']}/*.csv")
+    if not os.path.exists(config['directories']['target']):
+        os.makedirs(config['directories']['target'])
+    files = glob.glob(f"{config['directories']['csv']}/*.csv")
     for file in files:
         chart = GanttChart(file, config)
         chart.load_data()

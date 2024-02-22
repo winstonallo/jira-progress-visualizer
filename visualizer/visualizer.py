@@ -18,16 +18,15 @@ class GanttChart:
 
     def load_config(self, config):
         try:
-            self.start_date_field = config['start_date_field']
-            self.end_date_field = config['end_date_field']
-            self.target_dir = config['target_dir']
-            self.csv_dir = config['csv_dir']
-            self.label = config['label']
-            self.start = config['start']
-            self.deadline = config['deadline']
-            self.filters = config['filters?']
-            self.bar_height = float(config['bar_height'])
-            self.color_map = dict(config['colors'])
+            self.start_date_field = config['fields']['start_date']
+            self.end_date_field = config['fields']['end_date']
+            self.target_dir = config['directories']['target']
+            self.csv_dir = config['directories']['csv']
+            self.label = config['fields']['label']
+            self.filters = config['filters']
+            self.bar_height = float(config['visualization']['bar_height'])
+            self.date_map = dict(config['dates'])
+            self.color_map = dict(config['visualization']['colors'])
         except KeyError as e:
             print(f'error: data {e} missing in {self.path}')
             sys.exit(1)
@@ -48,7 +47,7 @@ class GanttChart:
     def apply_filters_to_dataframe(self):
         for filter in self.filters:
             try:
-                self.df = self.df[self.df[filter[0]] != filter[1]]
+                self.df = self.df[self.df[filter['field']] != filter['condition']]
             except IndexError:
                 print(f'error: invalid filter: {filter}')
                 sys.exit(1)
@@ -75,7 +74,7 @@ class GanttChart:
             ax.barh(i, duration, left=mdates.date2num(row[self.start_date_field]), height=self.bar_height, color=color)
         
         ax.set_yticks(range(len(self.df))) # set y-ticks to number of rows
-        ax.set_yticklabels(self.df[self.label], fontsize=12) # set y-tick labels to configured label
+        ax.set_yticklabels(self.df[self.label], fontsize=16, color='grey') # set y-tick labels to configured label
         plt.yticks(rotation=0) 
 
         self.format_axes(ax) # format x-axis and grid
@@ -84,12 +83,20 @@ class GanttChart:
 
     # sets start and end date (lines in chart) if configured
     def set_start_end(self): 
-        if self.start != 'None':
-            start = pd.to_datetime(self.start)
-            plt.axvline(x=mdates.date2num(start), color='red', linestyle='-', linewidth=4)
+        if self.date_map['start'] != 'None':
+            start = pd.to_datetime(self.date_map['start'])
+            plt.text(mdates.date2num(start), 0.6, 'PROJEKTSTART', rotation=90, verticalalignment='center', horizontalalignment='right', fontsize=20, color='grey')
+            plt.axvline(x=mdates.date2num(start), color='grey', linestyle='-', linewidth=4)
         
-        if self.deadline != 'None':
-            deadline = pd.to_datetime(self.deadline)
+        if self.date_map['deadline'] != 'None':
+            deadline = pd.to_datetime(self.date_map['deadline'])
+            plt.axvline(x=mdates.date2num(deadline), color='grey', linestyle='-', linewidth=4) 
+        
+        if self.date_map['go-live'] != 'None':
+            deadline = pd.to_datetime(self.date_map['go-live'])
+            for i in range(len(self.df)):
+                if i == 0:
+                    plt.text(mdates.date2num(deadline), i, 'GO-LIVE', rotation=90, verticalalignment='center', horizontalalignment='right', fontsize=20, color='red')
             plt.axvline(x=mdates.date2num(deadline), color='red', linestyle='-', linewidth=4)
 
 
@@ -97,7 +104,7 @@ class GanttChart:
         ax.xaxis.grid(True, linestyle='--', which='major', color='grey', alpha=.25)
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
         ax.xaxis.set_major_locator(mdates.MonthLocator())
-        plt.xticks(fontsize=8, rotation=70)
+        plt.xticks(fontsize=12, rotation=60, color='grey')
         plt.tight_layout()
 
     def save_plot(self):
