@@ -18,7 +18,11 @@ class GanttChart:
         self.df = None
         self.operation_mapping = {
             "equals": operator.eq,
-            "not_equals": operator.ne
+            "not_equals": operator.ne,
+            "lower_than": operator.lt,
+            "lower_equals": operator.le,
+            "greater_than": operator.gt,
+            "greater_equals": operator.ge
 		}
 
     def load_config(self, config):
@@ -41,19 +45,16 @@ class GanttChart:
             return color
         return self.colors[i]
 
-    # wraps text in dataframe for better readability
     def wrap_line(self, series, width):
         wrapped_series = series.apply(lambda x: textwrap.fill(x, width) if isinstance(x, str) else x)
         return wrapped_series
 
-    # applies filters to dataframe
     def apply_filters_to_dataframe(self):
         for filter in self.filters:
             try:
                 self.df = self.df[self.operation_mapping[filter['operator']](self.df[filter['field']], filter['condition'])]
             except IndexError:
                 Error(f'error: invalid filter: {filter}')
-        self.df[self.label] = self.wrap_line(self.df[self.label], 40)
 
     # loads data from csv file and applies filters
     def load_data(self):
@@ -65,6 +66,7 @@ class GanttChart:
         self.df.sort_values(by=['is_stream', self.start_date_field], inplace=True, ascending=False)
         self.df.drop('is_stream', axis=1, inplace=True)
         self.apply_filters_to_dataframe()
+        self.df[self.label] = self.wrap_line(self.df[self.label], 40)
 
     def generate_gantt_chart(self, output_path : str):
         fig, ax = plt.subplots(figsize=(19.2, 10.8))
