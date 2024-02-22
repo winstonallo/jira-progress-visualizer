@@ -25,7 +25,7 @@ class GanttChart:
             self.label = config['fields']['label']
             self.filters = config['filters']
             self.bar_height = float(config['visualization']['bar_height'])
-            self.date_map = dict(config['dates'])
+            self.milestones = config['milestones']
             self.color_map = dict(config['visualization']['colors'])
         except KeyError as e:
             print(f'error: data {e} missing in {self.path}')
@@ -78,27 +78,16 @@ class GanttChart:
         plt.yticks(rotation=0) 
 
         self.format_axes(ax) # format x-axis and grid
-        self.set_start_end() # set start and end date if configured
+        self.set_milestones() # set start and end date if configured
         plt.savefig(output_path, dpi=300) # save plot to configured target directory
 
     # sets start and end date (lines in chart) if configured
-    def set_start_end(self): 
-        if self.date_map['start'] != 'None':
-            start = pd.to_datetime(self.date_map['start'])
-            plt.text(mdates.date2num(start), 0.6, 'PROJEKTSTART', rotation=90, verticalalignment='center', horizontalalignment='right', fontsize=20, color='grey')
-            plt.axvline(x=mdates.date2num(start), color='grey', linestyle='-', linewidth=4)
-        
-        if self.date_map['deadline'] != 'None':
-            deadline = pd.to_datetime(self.date_map['deadline'])
-            plt.axvline(x=mdates.date2num(deadline), color='grey', linestyle='-', linewidth=4) 
-        
-        if self.date_map['go-live'] != 'None':
-            deadline = pd.to_datetime(self.date_map['go-live'])
-            for i in range(len(self.df)):
-                if i == 0:
-                    plt.text(mdates.date2num(deadline), i, 'GO-LIVE', rotation=90, verticalalignment='center', horizontalalignment='right', fontsize=20, color='red')
-            plt.axvline(x=mdates.date2num(deadline), color='red', linestyle='-', linewidth=4)
-
+    def set_milestones(self):
+        for milestone in self.milestones:
+            date = pd.to_datetime(milestone['date'])
+            if milestone['name'] != 'None':
+                plt.text(mdates.date2num(date), milestone['pos'], milestone['name'], rotation=90, verticalalignment='center', horizontalalignment='right', fontsize=18, color=milestone['color'])
+            plt.axvline(x=mdates.date2num(date), color=milestone['color'], linestyle='-', linewidth=4)
 
     def format_axes(self, ax):
         ax.xaxis.grid(True, linestyle='--', which='major', color='grey', alpha=.25)
