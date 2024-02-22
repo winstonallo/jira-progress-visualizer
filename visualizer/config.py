@@ -1,6 +1,6 @@
 import json
 import os
-from errors import Error
+from visualizer.error import Error
 
 class Config:
 

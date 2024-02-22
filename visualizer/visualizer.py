@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import numpy as np
 import os
-import sys
 import textwrap
-from errors import Error
+import operator
+from visualizer.error import Error
 
 plt.rcParams['font.family'] = 'DejaVu Serif'
 plt.rcParams['font.weight'] = 'bold'
@@ -16,6 +16,10 @@ class GanttChart:
         self.path = path
         self.load_config(config)
         self.df = None
+        self.operation_mapping = {
+            "equals": operator.eq,
+            "not_equals": operator.ne
+		}
 
     def load_config(self, config):
         try:
@@ -46,7 +50,7 @@ class GanttChart:
     def apply_filters_to_dataframe(self):
         for filter in self.filters:
             try:
-                self.df = self.df[self.df[filter['field']] != filter['condition']]
+                self.df = self.df[self.operation_mapping[filter['operator']](self.df[filter['field']], filter['condition'])]
             except IndexError:
                 Error(f'error: invalid filter: {filter}')
         self.df[self.label] = self.wrap_line(self.df[self.label], 40)
