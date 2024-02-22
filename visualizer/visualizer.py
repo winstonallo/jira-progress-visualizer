@@ -4,6 +4,7 @@ import matplotlib.dates as mdates
 import numpy as np
 import os
 import sys
+import textwrap
 
 plt.rcParams['font.family'] = 'DejaVu Serif'
 plt.rcParams['font.weight'] = 'bold'
@@ -24,12 +25,15 @@ class GanttChart:
             self.stream_color = config['stream_color']
             self.ap_color = config['ap_color']
             self.label = config['label']
+            self.start = config['start']
             self.deadline = config['deadline']
             self.filters = config['filters?']
-        except KeyError:
-            print(f'error: data missing in {self.path}')
+            self.bar_height = float(config['bar_height'])
+        except KeyError as e:
+            print(f'error: data {e} missing in {self.path}')
             sys.exit(1)
     
+    # sets color based on label
     def set_color(self, i : int, row : pd.Series) -> str:
         if row[self.label] == 'Testphase':
             return 'grey'
@@ -38,7 +42,10 @@ class GanttChart:
         elif row[self.label] == 'Abnahme':
             return 'green'
         elif row['Issue Type'] == 'Stream' and self.path != 'streams.csv':
-            return self.stream_color
+            if self.stream_color == 'random':
+                return self.colors[i]
+            else:
+                return self.stream_color
         elif row['Issue Type'] == 'Arbeitspaket':
             if self.ap_color == 'random':
                 return self.colors[i]
@@ -47,6 +54,12 @@ class GanttChart:
         else:
             return self.colors[i]
 
+    # wraps text in dataframe for better readability
+    def wrap_line(self, series, width):
+        wrapped_series = series.apply(lambda x: textwrap.fill(x, width) if isinstance(x, str) else x)
+        return wrapped_series
+
+    # applies filters to dataframe
     def apply_filters_to_dataframe(self):
         for filter in self.filters:
             try:
@@ -54,7 +67,9 @@ class GanttChart:
             except IndexError:
                 print(f'error: invalid filter: {filter}')
                 sys.exit(1)
+        self.df[self.label] = self.wrap_line(self.df[self.label], 40)
 
+    # loads data from csv file and applies filters
     def load_data(self):
         self.df = pd.read_csv(self.path)
         self.df[self.start_date_field] = pd.to_datetime(self.df[self.start_date_field], format='%d/%b/%y %I:%M %p', errors='coerce').dt.date
@@ -66,24 +81,32 @@ class GanttChart:
         self.apply_filters_to_dataframe()
 
     def generate_gantt_chart(self, output_path : str):
-        fig, ax = plt.subplots(figsize=(20, 10))
-        self.colors = plt.cm.viridis(np.linspace(0, 1, len(self.df)))
-        bar_height = 0.9
+        fig, ax = plt.subplots(figsize=(19.2, 10.8))
+        self.colors = plt.cm.viridis(np.linspace(0, 1, len(self.df))) # create color palette based on number of rows
 
-        for i, (_, row) in enumerate(self.df.iterrows()):
+        for i, (_, row) in enumerate(self.df.iterrows()): # iterate over rows and plot bars based on start and end date
             duration = (row[self.end_date_field] - row[self.start_date_field]).days
             color = self.set_color(i, row)
-            ax.barh(i, duration, left=mdates.date2num(row[self.start_date_field]), height=bar_height, color=color)
+            ax.barh(i, duration, left=mdates.date2num(row[self.start_date_field]), height=self.bar_height, color=color)
         
-        ax.set_yticks(range(len(self.df)))
-        ax.set_yticklabels(self.df[self.label], fontsize=12)
-        plt.yticks(rotation=0)
+        ax.set_yticks(range(len(self.df))) # set y-ticks to number of rows
+        ax.set_yticklabels(self.df[self.label], fontsize=12) # set y-tick labels to configured label
+        plt.yticks(rotation=0) 
 
-        self.format_axes(ax)
+        self.format_axes(ax) # format x-axis and grid
+        self.set_start_end() # set start and end date if configured
+        plt.savefig(output_path, dpi=300) # save plot to configured target directory
 
-        deadline = pd.to_datetime(self.deadline)
-        plt.axvline(x=mdates.date2num(deadline), color='red', linestyle='-')
-        plt.savefig(output_path, dpi=300)
+    # sets start and end date (lines in chart) if configured
+    def set_start_end(self): 
+        if self.start != 'None':
+            start = pd.to_datetime(self.start)
+            plt.axvline(x=mdates.date2num(start), color='red', linestyle='-', linewidth=4)
+        
+        if self.deadline != 'None':
+            deadline = pd.to_datetime(self.deadline)
+            plt.axvline(x=mdates.date2num(deadline), color='red', linestyle='-', linewidth=4)
+
 
     def format_axes(self, ax):
         ax.xaxis.grid(True, linestyle='--', which='major', color='grey', alpha=.25)
@@ -98,7 +121,4 @@ class GanttChart:
             trimmed_name = no_suffix.split("/", 1)[-1]
             self.generate_gantt_chart(f"{self.target_dir}/{trimmed_name}.png")
         else:
-            print("data not loaded - call load_data() before saving plot")
-
-
-
+            print("error: data not loaded - call load_data() before saving plot")
