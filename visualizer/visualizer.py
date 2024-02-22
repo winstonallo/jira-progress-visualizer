@@ -5,8 +5,8 @@ import numpy as np
 import os
 import sys
 
-STREAM_COLOR = '#5E1914'
-AP_COLOR = '#C21807'
+plt.rcParams['font.family'] = 'DejaVu Serif'
+plt.rcParams['font.weight'] = 'bold'
 
 class GanttChart:
 
@@ -25,6 +25,7 @@ class GanttChart:
             self.ap_color = config['ap_color']
             self.label = config['label']
             self.deadline = config['deadline']
+            self.filters = config['filters?']
         except KeyError:
             print(f'error: data missing in {self.path}')
             sys.exit(1)
@@ -39,21 +40,33 @@ class GanttChart:
         elif row['Issue Type'] == 'Stream' and self.path != 'streams.csv':
             return self.stream_color
         elif row['Issue Type'] == 'Arbeitspaket':
-            return self.ap_color
+            if self.ap_color == 'random':
+                return self.colors[i]
+            else:
+                return self.ap_color
         else:
             return self.colors[i]
 
+    def apply_filters_to_dataframe(self):
+        for filter in self.filters:
+            try:
+                self.df = self.df[self.df[filter[0]] != filter[1]]
+            except IndexError:
+                print(f'error: invalid filter: {filter}')
+                sys.exit(1)
+
     def load_data(self):
         self.df = pd.read_csv(self.path)
-        self.df[self.start_date_field] = pd.to_datetime(self.df[self.start_date_field], errors='coerce').dt.date
-        self.df[self.end_date_field] = pd.to_datetime(self.df[self.end_date_field], errors='coerce').dt.date
+        self.df[self.start_date_field] = pd.to_datetime(self.df[self.start_date_field], format='%d/%b/%y %I:%M %p', errors='coerce').dt.date
+        self.df[self.end_date_field] = pd.to_datetime(self.df[self.end_date_field], format='%d/%b/%y %I:%M %p', errors='coerce').dt.date
         self.df.dropna(subset=[self.end_date_field, self.start_date_field], inplace=True)
         self.df['is_stream'] = self.df['Issue Type'].apply(lambda x: 1 if x == 'Stream' else 0)
         self.df.sort_values(by=['is_stream', self.start_date_field], inplace=True, ascending=False)
         self.df.drop('is_stream', axis=1, inplace=True)
+        self.apply_filters_to_dataframe()
 
     def generate_gantt_chart(self, output_path : str):
-        fig, ax = plt.subplots(figsize=(10, 5))
+        fig, ax = plt.subplots(figsize=(20, 10))
         self.colors = plt.cm.viridis(np.linspace(0, 1, len(self.df)))
         bar_height = 0.9
 
@@ -63,7 +76,7 @@ class GanttChart:
             ax.barh(i, duration, left=mdates.date2num(row[self.start_date_field]), height=bar_height, color=color)
         
         ax.set_yticks(range(len(self.df)))
-        ax.set_yticklabels(self.df[self.label], fontsize=8)
+        ax.set_yticklabels(self.df[self.label], fontsize=12)
         plt.yticks(rotation=0)
 
         self.format_axes(ax)
