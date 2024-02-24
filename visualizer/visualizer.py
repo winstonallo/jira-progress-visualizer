@@ -25,7 +25,7 @@ class GanttChart:
             "greater_equals": operator.ge
 		}
 
-    def load_config(self, config):
+    def load_config(self, config : dict) -> None:
         try:
             self.start_date_field = config['fields']['start_date']
             self.end_date_field = config['fields']['end_date']
@@ -45,7 +45,7 @@ class GanttChart:
             return color
         return self.colors[i]
 
-    def wrap_line(self, series, width):
+    def wrap_lines(self, series : pd.Series, width : int) -> pd.Series:
         wrapped_series = series.apply(lambda x: textwrap.fill(x, width) if isinstance(x, str) else x)
         return wrapped_series
 
@@ -57,7 +57,7 @@ class GanttChart:
                 Error(f'error: invalid filter: {filter}')
 
     # loads data from csv file and applies filters
-    def load_data(self):
+    def load_data(self) -> None:
         self.df = pd.read_csv(self.path)
         self.df[self.start_date_field] = pd.to_datetime(self.df[self.start_date_field], format='%d/%b/%y %I:%M %p', errors='coerce').dt.date
         self.df[self.end_date_field] = pd.to_datetime(self.df[self.end_date_field], format='%d/%b/%y %I:%M %p', errors='coerce').dt.date
@@ -66,7 +66,7 @@ class GanttChart:
         self.df.sort_values(by=['is_stream', self.start_date_field], inplace=True, ascending=False)
         self.df.drop('is_stream', axis=1, inplace=True)
         self.apply_filters_to_dataframe()
-        self.df[self.label] = self.wrap_line(self.df[self.label], 40)
+        self.df[self.label] = self.wrap_lines(self.df[self.label], 40)
 
     def generate_gantt_chart(self, output_path : str):
         fig, ax = plt.subplots(figsize=(19.2, 10.8))
@@ -81,11 +81,10 @@ class GanttChart:
         ax.set_yticklabels(self.df[self.label], fontsize=16, color='grey') # set y-tick labels to configured label
         plt.yticks(rotation=0) 
 
-        self.format_axes(ax) # format x-axis and grid
-        self.set_milestones() # set start and end date if configured
-        plt.savefig(output_path, dpi=300) # save plot to configured target directory
+        self.format_axes(ax)
+        self.set_milestones()
+        plt.savefig(output_path, dpi=300)
 
-    # sets start and end date (lines in chart) if configured
     def set_milestones(self):
         for milestone in self.milestones:
             date = pd.to_datetime(milestone['date'])
