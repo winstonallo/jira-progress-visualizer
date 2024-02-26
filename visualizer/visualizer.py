@@ -33,6 +33,7 @@ class GanttChart:
             self.csv_dir = config['directories']['csv']
             self.label = config['fields']['label']
             self.filters = config['filters']
+            self.positioning_specs = config['visualization']['positioning_specs']
             self.bar_height = float(config['visualization']['bar_height'])
             self.milestones = config['milestones']
             self.color_map = dict(config['visualization']['colors'])
@@ -56,15 +57,24 @@ class GanttChart:
             except IndexError:
                 Error(f'error: invalid filter: {filter}')
 
+    def set_positioning_specs(self) -> None:
+        for key, value in self.positioning_specs.items():
+            if value['ascending'] == "True":
+                ascending = True
+            else:
+                ascending = False
+            self.df['condition'] = self.df[value['field']].apply(lambda x: 1 if x == value['value'] else 0)
+            self.df.sort_values(by=[value['field']], inplace=True, ascending=ascending)
+        self.df.drop('condition', axis=1, inplace=True)
+
     # loads data from csv file and applies filters
     def load_data(self) -> None:
         self.df = pd.read_csv(self.path)
         self.df[self.start_date_field] = pd.to_datetime(self.df[self.start_date_field], format='%d/%b/%y %I:%M %p', errors='coerce').dt.date
         self.df[self.end_date_field] = pd.to_datetime(self.df[self.end_date_field], format='%d/%b/%y %I:%M %p', errors='coerce').dt.date
         self.df.dropna(subset=[self.end_date_field, self.start_date_field], inplace=True)
-        self.df['is_stream'] = self.df['Issue Type'].apply(lambda x: 1 if x == 'Stream' else 0)
-        self.df.sort_values(by=['is_stream', self.start_date_field], inplace=True, ascending=False)
-        self.df.drop('is_stream', axis=1, inplace=True)
+        if self.positioning_specs != "None":
+            self.set_positioning_specs()
         if self.filters != "None":
             self.apply_filters_to_dataframe()
         self.df[self.label] = self.wrap_lines(self.df[self.label], 40)

@@ -11,6 +11,7 @@ if __name__ == "__main__":
         config_path = None
     config_0 = Config('config_0.json').config
     config_1 = Config('config_1.json').config
+    config_1_1 = Config('config_1.1.json').config
     config_2 = Config('config_2.json').config
     if not os.path.exists(config_1['directories']['target']):
         os.makedirs(config_1['directories']['target'])
@@ -21,6 +22,8 @@ if __name__ == "__main__":
             chart = GanttChart(file, config_0)
         elif file[:7] == 'data/1_':
             chart = GanttChart(file, config_1)
+        elif file[:9] == 'data/1.1_':
+            chart = GanttChart(file, config_1_1)
         elif file[:7] == 'data/2_':
             chart = GanttChart(file, config_2)
         chart.load_data()
