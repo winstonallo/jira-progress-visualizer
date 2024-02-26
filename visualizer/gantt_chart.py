@@ -37,6 +37,7 @@ class GanttChart:
             self.bar_height = float(config['visualization']['bar_height'])
             self.milestones = config['milestones']
             self.color_map = dict(config['visualization']['colors'])
+            self.y_label_fontsize = int(config['visualization']['y_label_fontsize'])
         except KeyError as e:
             Error(f'error: data {e} missing in {self.path}')
     
@@ -89,12 +90,13 @@ class GanttChart:
             ax.barh(i, duration, left=mdates.date2num(row[self.start_date_field]), height=self.bar_height, color=color)
         
         ax.set_yticks(range(len(self.df))) # set y-ticks to number of rows
-        ax.set_yticklabels(self.df[self.label], fontsize=16, color='grey') # set y-tick labels to configured label
+        ax.set_yticklabels(self.df[self.label], fontsize=self.y_label_fontsize, color='grey') # set y-tick labels to configured label
         plt.yticks(rotation=0) 
 
         self.format_axes(ax)
         self.set_milestones()
         plt.savefig(output_path, dpi=300)
+        print(f"info: gantt chart saved to {output_path}")
 
     def set_milestones(self):
         for milestone in self.milestones:

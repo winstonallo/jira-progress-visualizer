@@ -5,13 +5,15 @@ from visualizer.error import Error
 class Config:
 
     def __init__(self):
-        self.configs = {
-            '0': self.load_config('config_0.json'),
-            '1': self.load_config('config_1.json'),
-            '1.1': self.load_config('config_1.1.json'),
-            '2': self.load_config('config_2.json'),
-            '3': self.load_config('config_3.json')
-        }
+        try:
+            self.configs = {
+                '0': self.load_config('config_0.json'),
+                '1': self.load_config('config_1.json'),
+                '1.1': self.load_config('config_1.1.json'),
+                '2': self.load_config('config_2.json'),
+            }
+        except FileNotFoundError:
+            Error('no config file found - aborting')
 
     def load_config(self, path : str) -> dict[str, str]:
         if os.path.exists(path) and os.path.getsize(path) > 0:
