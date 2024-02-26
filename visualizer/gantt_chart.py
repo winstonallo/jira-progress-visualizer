@@ -51,22 +51,16 @@ class GanttChart:
         wrapped_series = series.apply(lambda x: textwrap.fill(x, width) if isinstance(x, str) else x)
         return wrapped_series
 
-    def apply_filters_to_dataframe(self):
+    def apply_filters_to_dataframe(self) -> None:
         for filter in self.filters:
             try:
                 self.df = self.df[self.operation_mapping[filter['operator']](self.df[filter['field']], filter['condition'])]
             except IndexError:
                 Error(f'error: invalid filter: {filter}')
 
-    def set_positioning_specs(self) -> None:
-        for key, value in self.positioning_specs.items():
-            if value['ascending'] == "True":
-                ascending = True
-            else:
-                ascending = False
-            self.df['condition'] = self.df[value['field']].apply(lambda x: 1 if x == value['value'] else 0)
-            self.df.sort_values(by=[value['field']], inplace=True, ascending=ascending)
-        self.df.drop('condition', axis=1, inplace=True)
+    def sort_dataframe(self) -> None:
+        self.df['date_diff'] = (self.df[self.end_date_field] - self.df[self.start_date_field])
+        self.df = self.df.sort_values(by=[self.start_date_field, 'date_diff'], ascending=[False, True])
 
     # loads data from csv file and applies filters
     def load_data(self) -> None:
@@ -74,13 +68,12 @@ class GanttChart:
         self.df[self.start_date_field] = pd.to_datetime(self.df[self.start_date_field], format='%d/%b/%y %I:%M %p', errors='coerce').dt.date
         self.df[self.end_date_field] = pd.to_datetime(self.df[self.end_date_field], format='%d/%b/%y %I:%M %p', errors='coerce').dt.date
         self.df.dropna(subset=[self.end_date_field, self.start_date_field], inplace=True)
-        if self.positioning_specs != "None":
-            self.set_positioning_specs()
-        if self.filters != "None":
+        if self.filters != 'None':
             self.apply_filters_to_dataframe()
+        self.sort_dataframe()
         self.df[self.label] = self.wrap_lines(self.df[self.label], 40)
 
-    def generate_gantt_chart(self, output_path : str):
+    def generate_gantt_chart(self, output_path : str) -> None:
         fig, ax = plt.subplots(figsize=(19.2, 10.8))
         self.colors = plt.cm.viridis(np.linspace(0, 1, len(self.df))) # create color palette based on number of rows
 
@@ -98,14 +91,14 @@ class GanttChart:
         plt.savefig(output_path, dpi=300)
         print(f"info: gantt chart saved to {output_path}")
 
-    def set_milestones(self):
+    def set_milestones(self) -> None:
         for milestone in self.milestones:
             date = pd.to_datetime(milestone['date'])
             if milestone['name'] != 'None':
                 plt.text(mdates.date2num(date), milestone['pos'], milestone['name'], rotation=90, verticalalignment='center', horizontalalignment='right', fontsize=18, color=milestone['color'])
             plt.axvline(x=mdates.date2num(date), color=milestone['color'], linestyle='-', linewidth=4)
 
-    def format_axes(self, ax):
+    def format_axes(self, ax) -> None:
         ax.xaxis.grid(True, linestyle='--', which='major', color='grey', alpha=.25)
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
         ax.xaxis.set_major_locator(mdates.MonthLocator())
