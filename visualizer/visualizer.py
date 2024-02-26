@@ -65,7 +65,8 @@ class GanttChart:
         self.df['is_stream'] = self.df['Issue Type'].apply(lambda x: 1 if x == 'Stream' else 0)
         self.df.sort_values(by=['is_stream', self.start_date_field], inplace=True, ascending=False)
         self.df.drop('is_stream', axis=1, inplace=True)
-        self.apply_filters_to_dataframe()
+        if self.filters != "None":
+            self.apply_filters_to_dataframe()
         self.df[self.label] = self.wrap_lines(self.df[self.label], 40)
 
     def generate_gantt_chart(self, output_path : str):
