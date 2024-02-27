@@ -3,15 +3,18 @@ import glob
 import sys
 from visualizer.gantt_chart import GanttChart
 from visualizer.config import Config
+from visualizer.error import Error
 
 if __name__ == "__main__":
     if len(sys.argv) == 2:
-        config_path = sys.argv[1]
+        src_dir = sys.argv[1]
     else:
-        config_path = None
+        Error("error: please provide a source directory in the command line - aborting")
     config = Config()
     if not os.path.exists('diagrams'):
         os.makedirs('diagrams')
+    if not os.path.exists(src_dir):
+        Error(f"error: directory {src_dir} does not exist; please ensure the path is valid - aborting")
     files = glob.glob(f"data/*.csv")
     for file in files:
         print(file)

@@ -25,6 +25,6 @@ class Config:
         else:
             Error('no config file found - aborting')
     
-    def get(self, index : str) ->dict[str, str]:
+    def get_config(self, index : str) ->dict[str, str]:
         return self.configs[index]
     
