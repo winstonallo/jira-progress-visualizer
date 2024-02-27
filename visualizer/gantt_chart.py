@@ -38,12 +38,12 @@ class GanttChart:
             self.milestones = config['milestones']
             self.color_map = dict(config['visualization']['colors'])
             self.y_label_fontsize = int(config['visualization']['y_label_fontsize'])
+            self.chart_line_style = config['visualization']['chart_line_style']
         except KeyError as e:
             Error(f'error: data {e} missing in {self.path}')
     
-    def set_color(self, i : int, row : pd.Series) -> str:
-        color = self.color_map.get(row[self.label])
-        if color is not None:
+    def set_color(self, i : int, row : pd.Series) -> str:  
+        if color := self.color_map.get(row[self.label]) is not None:
             return color
         return self.colors[i]
 
@@ -61,6 +61,7 @@ class GanttChart:
     def sort_dataframe(self) -> None:
         self.df['date_diff'] = (self.df[self.end_date_field] - self.df[self.start_date_field])
         self.df = self.df.sort_values(by=[self.start_date_field, 'date_diff'], ascending=[False, True])
+        self.df.drop(columns=['date_diff'], inplace=True)
 
     # loads data from csv file and applies filters
     def load_data(self) -> None:
@@ -83,7 +84,7 @@ class GanttChart:
             ax.barh(i, duration, left=mdates.date2num(row[self.start_date_field]), height=self.bar_height, color=color)
         
         ax.set_yticks(range(len(self.df))) # set y-ticks to number of rows
-        ax.set_yticklabels(self.df[self.label], fontsize=self.y_label_fontsize, color='grey') # set y-tick labels to configured label
+        ax.set_yticklabels(self.df[self.label], fontsize=self.y_label_fontsize, color=self.color_map['y_label']) # set y-tick labels to configured label
         plt.yticks(rotation=0) 
 
         self.format_axes(ax)
@@ -96,13 +97,13 @@ class GanttChart:
             date = pd.to_datetime(milestone['date'])
             if milestone['name'] != 'None':
                 plt.text(mdates.date2num(date), milestone['pos'], milestone['name'], rotation=90, verticalalignment='center', horizontalalignment='right', fontsize=18, color=milestone['color'])
-            plt.axvline(x=mdates.date2num(date), color=milestone['color'], linestyle='-', linewidth=4)
+            plt.axvline(x=mdates.date2num(date), color=milestone['color'], linestyle=milestone['line_style'], linewidth=4)
 
     def format_axes(self, ax) -> None:
-        ax.xaxis.grid(True, linestyle='--', which='major', color='grey', alpha=.25)
+        ax.xaxis.grid(True, linestyle=self.chart_line_style, which='major', color=self.color_map['chart_lines'], alpha=.25)
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
         ax.xaxis.set_major_locator(mdates.MonthLocator())
-        plt.xticks(fontsize=12, rotation=60, color='grey')
+        plt.xticks(fontsize=12, rotation=60, color=self.color_map['x_label'])
         plt.tight_layout()
 
     def save_plot(self):
