@@ -29,6 +29,7 @@ class GanttChart:
         
     def load_config(self, config : dict) -> None:
         self.config = config
+        self.validate_config()
         if not os.path.exists(self.config.get('directories', {}).get('target')):
             os.makedirs(self.config.get('directories', {}).get('target'))
         self.target_dir = self.config.get('directories', {}).get('target', 'diagrams')
@@ -49,11 +50,10 @@ class GanttChart:
 
     def validate_config(self) -> None:
         required_fields = [
-            'directories.csv',
-            'fields.start_date',
-            'fields.end_date']
-        if missing := [field for field in required_fields if self.config.get(field) is None] is not None:
-            raise Error(f'error: missing required fields: {",".join(missing)}; please check your config file - aborting', exit=True)
+            'start_date',
+            'end_date']
+        if missing := [field for field in required_fields if self.config.get('fields', {}).get(field) is None]:
+            Error(f'missing required fields: {", ".join(missing)}; please check your config file - aborting', 1, True)
     
     def set_color(self, i : int, row : pd.Series) -> str:  
         if color := self.color_map.get(row[self.label]) is not None:
