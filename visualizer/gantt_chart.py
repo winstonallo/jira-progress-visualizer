@@ -44,6 +44,8 @@ class GanttChart:
         self.fonts = self.config.get('visualization', {}).get('fonts', {})
         self.chart_line_style = self.config.get('visualization', {}).get('chart_line_style', '--')
         self.sort_by = self.config.get('sort_by', 'start_date')
+        self.date_input_format = self.config.get('date_format', '%d/%b/%y %I:%M %p')
+        self.date_display_format = self.config.get('date_display_format', '%Y-%m-%d')
 
     def validate_config(self) -> None:
         required_fields = [
@@ -80,8 +82,8 @@ class GanttChart:
 
     def load_data(self) -> None:
         self.df = pd.read_csv(self.path)
-        self.df[self.start_date_field] = pd.to_datetime(self.df[self.start_date_field], format='%d/%b/%y %I:%M %p', errors='coerce').dt.date
-        self.df[self.end_date_field] = pd.to_datetime(self.df[self.end_date_field], format='%d/%b/%y %I:%M %p', errors='coerce').dt.date
+        self.df[self.start_date_field] = pd.to_datetime(self.df[self.start_date_field], format=self.date_input_format, errors='coerce').dt.date
+        self.df[self.end_date_field] = pd.to_datetime(self.df[self.end_date_field], format=self.date_input_format, errors='coerce').dt.date
         self.df.dropna(subset=[self.end_date_field, self.start_date_field], inplace=True)
         if self.filters != 'None':
             self.apply_filters_to_dataframe()
@@ -123,7 +125,7 @@ class GanttChart:
 
     def format_axes(self, ax) -> None:
         ax.xaxis.grid(True, linestyle=self.chart_line_style, which='major', color=self.color_map['chart_lines'], alpha=.25)
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter(self.date_display_format))
         ax.xaxis.set_major_locator(mdates.MonthLocator())
         plt.xticks(fontsize=12, rotation=60, color=self.color_map['x_label'])
         plt.tight_layout()
