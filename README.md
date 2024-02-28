@@ -8,4 +8,4 @@ generate gantt charts for all csv files in selected directory based on start/due
 python3 main.py <csv directory>
 ```
 
-**_written for personal use_**
+_written for personal use_
