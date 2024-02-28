@@ -13,7 +13,7 @@ if __name__ == "__main__":
     config = Config()
     if not os.path.exists(src_dir):
         Error(f"directory {src_dir} does not exist; please ensure the path is valid - aborting")
-    files = glob.glob(f"data/*.csv")
+    files = glob.glob(f"{src_dir}/*.csv")
     for file in files:
         if file[:7] == 'data/0_':
             chart = GanttChart(file, config.get_config('0'))
