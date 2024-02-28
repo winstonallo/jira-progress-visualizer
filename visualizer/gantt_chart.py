@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+import matplotlib.colors as mcolors
 import numpy as np
 import os
 import textwrap
@@ -38,9 +39,11 @@ class GanttChart:
         self.bar_height = float(self.config.get('visualization', {}).get('bar_height', 0.9))
         self.milestones = self.config.get('milestones', [])
         self.color_map = self.config.get('visualization', {}).get('colors', {})
-        self.y_label_fontsize = int(self.config.get('visualization', {}).get('y_label_fontsize', 12))
-        self.y_label_fontsize = int(self.config.get('visualization', {}).get('x_label_fontsize', 12))
+        # self.y_label_fontsize = int(self.config.get('visualization', {}).get('y_label_fontsize', 12))
+        # self.y_label_fontsize = int(self.config.get('visualization', {}).get('x_label_fontsize', 12))
+        self.fonts = self.config.get('visualization', {}).get('fonts', {})
         self.chart_line_style = self.config.get('visualization', {}).get('chart_line_style', '--')
+        self.sort_by = self.config.get('sort_by', 'start_date')
 
     def validate_config(self) -> None:
         required_fields = [
@@ -80,11 +83,15 @@ class GanttChart:
             try:
                 self.df = self.df[self.operation_mapping[filter['operator']](self.df[filter['field']], filter['condition'])]
             except IndexError:
-                Error(f'error: invalid filter: {filter}')
+                raise ValueError(f'error: invalid filter: {filter} - ignoring')
 
     def sort_dataframe(self) -> None:
         self.df['date_diff'] = (self.df[self.end_date_field] - self.df[self.start_date_field])
-        self.df = self.df.sort_values(by=[self.start_date_field, 'date_diff'], ascending=[False, True])
+        if self.sort_by == 'start_date':
+            self.df = self.df.sort_values(by=[self.start_date_field, 'date_diff'], ascending=[False, True])
+        elif self.sort_by == 'structure_pos':
+            self.df['structure_pos'] = self.df['Description'].str.extract(r'(\d+)$').astype(int)
+            self.df = self.df.sort_values(by=['structure_pos', 'date_diff'], ascending=[False, True])
         self.df.drop(columns=['date_diff'], inplace=True)
 
     # loads data from csv file and applies filters
@@ -100,7 +107,8 @@ class GanttChart:
 
     def generate_gantt_chart(self, output_path : str) -> None:
         fig, ax = plt.subplots(figsize=(19.2, 10.8))
-        self.colors = plt.cm.viridis(np.linspace(0, 1, len(self.df))) # create color palette based on number of rows
+
+        self.colors = plt.cm.Greys(np.linspace(0.3, 0.9, len(self.df))) # create color palette based on number of rows
 
         for i, (_, row) in enumerate(self.df.iterrows()): # iterate over rows and plot bars based on start and end date
             duration = (row[self.end_date_field] - row[self.start_date_field]).days
@@ -108,9 +116,16 @@ class GanttChart:
             ax.barh(i, duration, left=mdates.date2num(row[self.start_date_field]), height=self.bar_height, color=color)
         
         ax.set_yticks(range(len(self.df))) # set y-ticks to number of rows
-        ax.set_yticklabels(self.df[self.label], fontsize=self.y_label_fontsize, color=self.color_map['y_label']) # set y-tick labels to configured label
+        # ax.set_yticklabels(self.df[self.label], fontsize=self.y_label_fontsize, color=self.color_map['y_label']) # set y-tick labels to configured label
+        ax.set_yticklabels(self.df[self.label]) # set y-tick labels to configured label
+        if len(self.df) < 15:
+            fontsize = 16
+        else:
+            fontsize = 14
+        for label, value in zip(ax.get_yticklabels(), self.df['Issue Type']):
+            label.set_color(self.fonts['y_label'][value]['font_color'])
+            label.set_fontsize(fontsize)
         plt.yticks(rotation=0) 
-
         self.format_axes(ax)
         self.set_milestones()
         plt.savefig(output_path, dpi=300)
@@ -136,4 +151,4 @@ class GanttChart:
             trimmed_name = no_suffix.split("/", 1)[-1]
             self.generate_gantt_chart(f"{self.target_dir}/{trimmed_name}.png")
         else:
-            print("error: data not loaded - call load_data() before saving plot")
+            raise Error("data not loaded - call load_data() before saving plot")

@@ -7,10 +7,10 @@ class Config:
     def __init__(self):
         try:
             self.configs = {
-                '0': self.load_config('config_0.json'),
-                '1': self.load_config('config_1.json'),
-                '1.1': self.load_config('config_1.1.json'),
-                '2': self.load_config('config_2.json'),
+                '0': self.load_config('config/config_0.json'),
+                '1': self.load_config('config/config_1.json'),
+                '1.1': self.load_config('config/config_1.1.json'),
+                '2': self.load_config('config/config_2.json'),
             }
         except FileNotFoundError:
             Error('no config file found - aborting')

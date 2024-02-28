@@ -19,13 +19,13 @@ if __name__ == "__main__":
     for file in files:
         print(file)
         if file[:7] == 'data/0_':
-            chart = GanttChart(file, config.get('0'))
+            chart = GanttChart(file, config.get_config('0'))
         elif file[:7] == 'data/1_':
-            chart = GanttChart(file, config.get('1'))
+            chart = GanttChart(file, config.get_config('1'))
         elif file[:9] == 'data/1.1_':
-            chart = GanttChart(file, config.get('1.1'))
+            chart = GanttChart(file, config.get_config('1.1'))
         elif file[:7] == 'data/2_':
-            chart = GanttChart(file, config.get('2'))
+            chart = GanttChart(file, config.get_config('2'))
         chart.load_data()
         chart.save_plot()
         
