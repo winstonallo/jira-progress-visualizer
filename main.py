@@ -1,20 +1,28 @@
 import os
 import glob
 import sys
-from visualizer.visualizer import GanttChart
+from visualizer.gantt_chart import GanttChart
 from visualizer.config import Config
+from visualizer.error import Error
 
 if __name__ == "__main__":
     if len(sys.argv) == 2:
-        config_path = sys.argv[1]
+        src_dir = sys.argv[1]
     else:
-        config_path = None
-    config = Config().config
-    if not os.path.exists(config['directories']['target']):
-        os.makedirs(config['directories']['target'])
-    files = glob.glob(f"{config['directories']['csv']}/*.csv")
+        Error("please provide a source directory in the command line - aborting")
+    config = Config()
+    if not os.path.exists(src_dir):
+        Error(f"directory {src_dir} does not exist; please ensure the path is valid - aborting")
+    files = glob.glob(f"data/*.csv")
     for file in files:
-        chart = GanttChart(file, config)
+        if file[:7] == 'data/0_':
+            chart = GanttChart(file, config.get_config('0'))
+        elif file[:7] == 'data/1_':
+            chart = GanttChart(file, config.get_config('1'))
+        elif file[:9] == 'data/1.1_':
+            chart = GanttChart(file, config.get_config('1.1'))
+        elif file[:7] == 'data/2_':
+            chart = GanttChart(file, config.get_config('2'))
         chart.load_data()
         chart.save_plot()
         
