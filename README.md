@@ -1,9 +1,13 @@
 # jira-progress-visualizer
 
-parse jira csv file into a flow chart based on start/due date of exported issues
+generate gantt charts for all csv files in selected directory based on start/due dates
+
+## config
+
+
 
 ## usage
 
 ```bash
-python3 main.py (if not "config.json"):"name_of_your_config.json"
+python3 main.py <csv directory>
 ```
