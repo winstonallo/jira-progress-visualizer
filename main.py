@@ -9,15 +9,12 @@ if __name__ == "__main__":
     if len(sys.argv) == 2:
         src_dir = sys.argv[1]
     else:
-        Error("error: please provide a source directory in the command line - aborting")
+        Error("please provide a source directory in the command line - aborting")
     config = Config()
-    if not os.path.exists('diagrams'):
-        os.makedirs('diagrams')
     if not os.path.exists(src_dir):
-        Error(f"error: directory {src_dir} does not exist; please ensure the path is valid - aborting")
+        Error(f"directory {src_dir} does not exist; please ensure the path is valid - aborting")
     files = glob.glob(f"data/*.csv")
     for file in files:
-        print(file)
         if file[:7] == 'data/0_':
             chart = GanttChart(file, config.get_config('0'))
         elif file[:7] == 'data/1_':

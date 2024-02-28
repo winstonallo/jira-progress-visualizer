@@ -13,7 +13,7 @@ class Config:
                 '2': self.load_config('config/config_2.json'),
             }
         except FileNotFoundError:
-            Error('no config file found - aborting')
+            raise Error('no config file found - aborting')
 
     def load_config(self, path : str) -> dict[str, str]:
         if os.path.exists(path) and os.path.getsize(path) > 0:
