@@ -76,9 +76,12 @@ class GanttChart:
         if self.sort_by == 'start_date':
             self.df = self.df.sort_values(by=[self.start_date_field, 'date_diff'], ascending=[False, True])
         elif self.sort_by == 'structure_pos':
-            self.df['structure_pos'] = self.df['Description'].str.extract(r'(\d+)$').astype(int)
-            self.df = self.df.sort_values(by=['structure_pos', 'date_diff'], ascending=[False, True])
+            self.df['Description'] = self.df['Description'].astype(str).str.strip()
+            self.df['structure_pos'] = pd.to_numeric(self.df['Description'].str.extract(r'\D(\d+)$')[0], errors='coerce')
+            self.df['structure_pos'] = self.df['structure_pos'].fillna(0).astype(int)
+            self.df = self.df.sort_values(by=['structure_pos'], ascending=[False])
         self.df.drop(columns=['date_diff'], inplace=True)
+
 
     def load_data(self) -> None:
         self.df = pd.read_csv(self.path)
@@ -93,7 +96,6 @@ class GanttChart:
     def init_ylabels(self, ax):
         ax.set_yticks(range(len(self.df)))
         ax.set_yticklabels(self.df[self.label])
-
         for label, value in zip(ax.get_yticklabels(), self.df['Issue Type']):
             fontsize = self.fonts['y_label'][value]['font_size']
             if len(self.df) > 14:
@@ -132,8 +134,7 @@ class GanttChart:
 
     def save_plot(self):
         if self.df is not None:
-            no_suffix = os.path.splitext(self.path)[0]
-            trimmed_name = no_suffix.split("/", 1)[-1]
+            trimmed_name = os.path.splitext(self.path)[0].split("/", 1)[-1]
             self.generate_gantt_chart(f"{self.target_dir}/{trimmed_name}.png")
         else:
-            raise Error("data not loaded - call load_data() before saving plot")
+            raise Error("dataframe not loaded - call load_data() before saving plot")
